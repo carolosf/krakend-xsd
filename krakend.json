@@ -1,0 +1,53 @@
+{
+  "$schema": "https://www.krakend.io/schema/v3.json",
+  "version": 3,
+  "name": "KrakenD - API Gateway",
+  "timeout": "3000ms",
+  "cache_ttl": "300s",
+  "output_encoding": "json",
+  "plugin": {
+    "pattern":".so",
+    "folder": "/opt/krakend/plugins/"
+  },
+  "endpoints": [
+    {
+      "endpoint": "/",
+      "method": "POST",
+      "output_encoding": "no-op",
+      "backend": [
+        {
+          "url_pattern": "/",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "POST",
+          "host": [
+            "172.17.0.4:80"
+          ],
+          "disable_host_sanitize": false,
+          "extra_config":{
+            "plugin/req-resp-modifier":{
+              "name": [
+                "krakend-xsd-request",
+                "krakend-xsd-response"
+              ],
+              "krakend-xsd":{
+                "xsd_file":"/opt/krakend/xsd/test_fullname.xsd"
+              }
+            }
+          }
+        }
+      ],
+      "extra_config":{
+        "plugin/req-resp-modifier":{
+          "name": [
+            "krakend-xsd-request",
+            "krakend-xsd-response"
+          ],
+          "krakend-xsd":{
+            "xsd_file":"/opt/krakend/xsd/test_fullname.xsd"
+          }
+        }
+      }
+    }
+  ]
+}

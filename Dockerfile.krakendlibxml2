@@ -1,0 +1,13 @@
+FROM devopsfaith/krakend
+USER 0
+
+RUN apk add libxml2
+
+USER 1000
+
+WORKDIR /etc/krakend
+
+ENTRYPOINT [ "/usr/bin/krakend" ]
+CMD [ "run", "-c", "/etc/krakend/krakend.json" ]
+
+EXPOSE 8000 8090
