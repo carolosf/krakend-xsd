@@ -83,24 +83,23 @@ func (r registerer) requestDump(
 		}
 
 		toByte := ConvertToByte(req.Body())
-		log.Println("body:", toByte)
 		err = xsdHandler.ValidateMem(toByte, xsdvalidate.ParsErrVerbose)
 		if err != nil {
 			return nil, err
 		}
 
-		//convertRequestForModification(req)
-		return input, nil
+		newRequest := convertRequestForModification(req, toByte)
+		return newRequest, nil
 	}
 }
 
-func convertRequestForModification(req RequestWrapper) requestWrapper {
+func convertRequestForModification(req RequestWrapper, b []byte) requestWrapper {
 	return requestWrapper{
 		req.Method(),
 		req.URL(),
 		req.Query(),
 		req.Path(),
-		req.Body(),
+		io.NopCloser(bytes.NewReader(b)),
 		req.Params(),
 		req.Headers(),
 	}
@@ -173,19 +172,21 @@ func (r registerer) responseDump(
 		log.Println("status code:", resp.StatusCode())
 		//log.Println("data:", resp.Data())
 
-		log.Println("Scan body")
+		log.Println("validate xml")
 
 		if xsdHandler == nil {
 			return nil, err
 		}
 
-		err = xsdHandler.ValidateMem(ConvertToByte(resp.Io()), xsdvalidate.ValidErrDefault)
+		toByte := ConvertToByte(resp.Io())
+		//log.Println("byte:", toByte)
+		err = xsdHandler.ValidateMem(toByte, xsdvalidate.ParsErrVerbose)
 		if err != nil {
 			return nil, err
 		}
 
-		//tmp := convertResponseForModification(resp)
-		return input, nil
+		newResponse := convertResponseForModification(resp, toByte)
+		return newResponse, nil
 	}
 }
 
@@ -199,7 +200,7 @@ func encodeResponseMetadataAsBytes(resp ResponseWrapper) (bytes.Buffer, error) {
 	return metadata, err
 }
 
-func convertResponseForModification(resp ResponseWrapper) responseWrapper {
+func convertResponseForModification(resp ResponseWrapper, b []byte) responseWrapper {
 	return responseWrapper{
 		data:       resp.Data(),
 		isComplete: resp.IsComplete(),
@@ -207,7 +208,7 @@ func convertResponseForModification(resp ResponseWrapper) responseWrapper {
 			headers:    resp.Headers(),
 			statusCode: resp.StatusCode(),
 		},
-		io: resp.Io(),
+		io: bytes.NewReader(b),
 	}
 }
 

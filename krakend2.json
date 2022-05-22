@@ -21,13 +21,12 @@
           "sd": "static",
           "method": "GET",
           "host": [
-            "172.17.0.5:80"
+            "172.17.0.2:80"
           ],
           "disable_host_sanitize": false,
           "extra_config":{
             "plugin/req-resp-modifier":{
               "name": [
-                "krakend-xsd-request",
                 "krakend-xsd-response"
               ],
               "krakend-xsd":{
@@ -36,18 +35,34 @@
             }
           }
         }
-      ],
-      "extra_config":{
-        "plugin/req-resp-modifier":{
-          "name": [
-            "krakend-xsd-request",
-            "krakend-xsd-response"
+      ]
+    },
+    {
+      "endpoint": "/valid.xml",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "backend": [
+        {
+          "url_pattern": "/valid.xml",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": [
+            "172.17.0.2:80"
           ],
-          "krakend-xsd":{
-            "xsd_file":"/opt/krakend/xsd/test_fullname.xsd"
+          "disable_host_sanitize": false,
+          "extra_config": {
+            "plugin/req-resp-modifier": {
+              "name": [
+                "krakend-xsd-response"
+              ],
+              "krakend-xsd": {
+                "xsd_file": "/opt/krakend/xsd/test_fullname.xsd"
+              }
+            }
           }
         }
-      }
+      ]
     }
-  ]
+      ]
 }
