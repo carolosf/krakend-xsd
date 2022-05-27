@@ -16,6 +16,8 @@ quick_run_response:
 
 quick_build_and_run: quick_build quick_run
 
+build_and_run_response: quick_build_docker quick_build build_runner quick_run_response
+
 run_nginx:
 	docker run --rm --name test-nginx -d -p 8081:80 nginx
 
@@ -27,3 +29,6 @@ curl_post_body_valid:
 
 curl_post_body_invalid:
 	curl -X POST -H "Content-Type: application/xml" -H "Accept: application/xml" --data-binary "@docker-nginx-response/static/invalid.xml" --trace curl.log -vvv http://localhost:8080/
+
+curl_response_valid:
+	curl -v http://localhost:8083/valid.xml

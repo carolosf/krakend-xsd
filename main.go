@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 func main() {}
@@ -150,54 +151,30 @@ func (r registerer) responseDump(
 			return nil, unkownTypeErr
 		}
 
-		xsdvalidate.Init()
-		defer xsdvalidate.Cleanup()
-		relCfg := cfg["krakend-xsd"].(map[string]interface{})
-		xsdFile, ok := relCfg["xsd_file"].(string)
-		if !ok {
-			log.Println("Must enter an xsd file path")
+		log.Printf("data: %#v", resp.Data())
+
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(resp.Io())
+		log.Printf("io: %#v", buf)
+
+		var headerMap map[string][]string
+		headerMap = resp.Headers()
+		headerMap["Content-Length"] = []string{strconv.Itoa(len(buf.Bytes()))}
+		//headerMap["X-Krakend-Completed"] = []string{"true"}
+
+		var tmp ResponseWrapper
+		tmp = responseWrapper{
+			data:       resp.Data(),
+			isComplete: resp.IsComplete(),
+			metadata: metadataWrapper{
+				headers:    headerMap,
+				statusCode: resp.StatusCode(),
+			},
+			io: io.NopCloser(bytes.NewReader(buf.Bytes())),
 		}
 
-		xsdHandler, err := xsdvalidate.NewXsdHandlerUrl(xsdFile, xsdvalidate.ParsErrVerbose)
-		if err != nil {
-			log.Println("Could not load xsd file: ", xsdFile)
-		}
-		defer xsdHandler.Free()
-
-		log.Println("response", cfg)
-
-		log.Println("intercepting response")
-		log.Println("is complete:", resp.IsComplete())
-		log.Println("headers:", resp.Headers())
-		log.Println("status code:", resp.StatusCode())
-		//log.Println("data:", resp.Data())
-
-		log.Println("validate xml")
-
-		if xsdHandler == nil {
-			return nil, err
-		}
-
-		toByte := ConvertToByte(resp.Io())
-		//log.Println("byte:", toByte)
-		err = xsdHandler.ValidateMem(toByte, xsdvalidate.ParsErrVerbose)
-		if err != nil {
-			return nil, err
-		}
-
-		newResponse := convertResponseForModification(resp, toByte)
-		return newResponse, nil
+		return tmp, nil
 	}
-}
-
-func encodeResponseMetadataAsBytes(resp ResponseWrapper) (bytes.Buffer, error) {
-	var metadata bytes.Buffer
-	enc := gob.NewEncoder(&metadata)
-	err := enc.Encode(ResponseMetadataWrapper{
-		resp.Headers(),
-		resp.StatusCode(),
-	})
-	return metadata, err
 }
 
 func convertResponseForModification(resp ResponseWrapper, b []byte) responseWrapper {
@@ -221,15 +198,6 @@ type RequestWrapper interface {
 	URL() *url.URL
 	Query() url.Values
 	Path() string
-}
-
-// ResponseWrapper is an interface for passing proxy response between the lura pipe and the loaded plugins
-type ResponseWrapper interface {
-	Data() map[string]interface{}
-	Io() io.Reader
-	IsComplete() bool
-	Headers() map[string][]string
-	StatusCode() int
 }
 
 type requestMetadataWrapper struct {
@@ -274,14 +242,25 @@ func drainBody(b io.ReadCloser) (r1, r2 io.ReadCloser, err error) {
 	return io.NopCloser(&buf), io.NopCloser(bytes.NewReader(buf.Bytes())), nil
 }
 
+// ResponseWrapper is an interface for passing proxy response metadata between the lura pipe and the loaded plugins
+// Deprecated: use the methods available at the ResponseWrapper interface
+type ResponseMetadataWrapper interface {
+	Headers() map[string][]string
+	StatusCode() int
+}
+
+// ResponseWrapper is an interface for passing proxy response between the lura pipe and the loaded plugins
+type ResponseWrapper interface {
+	Data() map[string]interface{}
+	Io() io.Reader
+	IsComplete() bool
+	StatusCode() int
+	Headers() map[string][]string
+}
+
 type metadataWrapper struct {
 	headers    map[string][]string
 	statusCode int
-}
-
-type ResponseMetadataWrapper struct {
-	Headers    map[string][]string
-	StatusCode int
 }
 
 func (m metadataWrapper) Headers() map[string][]string { return m.headers }

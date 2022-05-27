@@ -4,7 +4,7 @@
   "name": "KrakenD - API Gateway",
   "timeout": "3000ms",
   "cache_ttl": "300s",
-  "output_encoding": "json",
+  "output_encoding": "no-op",
   "plugin": {
     "pattern":".so",
     "folder": "/opt/krakend/plugins/"
@@ -44,7 +44,7 @@
       "backend": [
         {
           "url_pattern": "/valid.xml",
-          "encoding": "no-op",
+            "encoding": "no-op",
           "sd": "static",
           "method": "GET",
           "host": [
